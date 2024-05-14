@@ -15,7 +15,7 @@ edgelist = pd.read_csv('gckpp_EdgeList.csv',skiprows=25)
 # find max species index in edgelist
 number_active_spc = max(edgelist['# species index (starts from 1)'])
 # only keep the active species
-c0 = case.concentrations[:number_active_spc]
+c0 = np.array(case.concentrations[:number_active_spc])
 dcdt = np.zeros_like(c0)
 
 # rate constants
@@ -105,3 +105,16 @@ def f(t, c0):
 
 # solve the system of ODEs
 # sol = solve_ivp(f, [0, 1], c0, method='LSODA', t_eval=np.linspace(0, 1, 2))
+# solve the system of ODEs with a bunch of teeny timesteps forward Euler style
+dt = 1e-3  # 1 millisecond avoids inf/nan stability issues
+endt = 1e-1
+total_steps = int(endt/dt)
+c = c0+0
+
+for i, t in enumerate(np.linspace(0, endt, total_steps)):
+    # print a bar every 1% of the way to show progress
+    if i % (total_steps // 10) == 0:
+        print(f'Progress: {i / total_steps * 100:.1f}%', end='\r', flush=True)
+    c += f(t, c)*dt
+    c[c<0] = 0
+print(f'Progress: 100.0%')
